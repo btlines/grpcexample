@@ -3,3 +3,4 @@ project/project/
 project/target/
 *.class
 *.log
+src/main/resources/specs/

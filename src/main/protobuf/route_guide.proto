@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 import "scalapb/scalapb.proto";
+import "google/api/annotations.proto";
 
 option (scalapb.options) = {
   package_name: "io.grpc.routeguide"
@@ -68,7 +69,12 @@ service RouteGuide {
   // Obtains the feature at a given position.
   // A feature with an empty name is returned if there's no feature at the given
   // position.
-  rpc GetFeature(Point) returns (Feature) {}
+  rpc GetFeature(Point) returns (Feature) {
+    // define associated REST endpoint on GRPC Gateway
+    option (google.api.http) = {
+      get: "/api/routeguide/feature"
+    };
+  }
 
   // A server-to-client streaming RPC.
   // Obtains the Features available within the given Rectangle.  Results are
