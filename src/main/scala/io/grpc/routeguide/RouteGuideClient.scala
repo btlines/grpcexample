@@ -10,9 +10,6 @@ import RouteGuideService._
 
 import scala.util.{Random, Try}
 
-/**
-  *
-  */
 class RouteGuideClient(host: String, port: Int) {
 
   val logger: Logger = Logger.getLogger(classOf[RouteGuideClient].getName)

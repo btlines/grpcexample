@@ -1,29 +1,16 @@
 package io.grpc.routeguide
 
-import java.net.URL
 import java.util.logging.Logger
 
 import io.grpc.{Server, ServerBuilder}
 
-import scala.concurrent.ExecutionContext
-
-class RouteGuideServer(port: Int, featureFile: URL)(implicit ec: ExecutionContext) {
+class RouteGuideServer(server: Server) {
 
   val logger: Logger = Logger.getLogger(classOf[RouteGuideServer].getName)
 
-  private val server: Server = {
-    val service = new RouteGuideService(
-      RouteGuidePersistence.parseFeatures(featureFile)
-    )
-    ServerBuilder
-      .forPort(port)
-      .addService(RouteGuideGrpc.bindService(service, ec))
-      .build()
-  }
-
   def start(): Unit = {
     server.start()
-    logger.info(s"Server started, listening on $port")
+    logger.info(s"Server started, listening on ${server.getPort}")
     sys.addShutdownHook {
       // Use stderr here since the logger may has been reset by its JVM shutdown hook.
       System.err.println("*** shutting down gRPC server since JVM is shutting down")
@@ -46,8 +33,40 @@ class RouteGuideServer(port: Int, featureFile: URL)(implicit ec: ExecutionContex
 }
 
 object RouteGuideServer extends App {
-  import scala.concurrent.ExecutionContext.Implicits.global
-  val server = new RouteGuideServer(8980, RouteGuidePersistence.defaultFeatureFile)
+  val features = RouteGuidePersistence.parseFeatures(
+    Thread.currentThread.getContextClassLoader.getResource("route_guide.json")
+  )
+
+  val server = new RouteGuideServer(
+    ServerBuilder
+      .forPort(8980)
+      .addService(
+        RouteGuideGrpc.bindService(
+          new RouteGuideService(features),
+          scala.concurrent.ExecutionContext.global
+        )
+      )
+      .build()
+  )
+  server.start()
+  server.blockUntilShutdown()
+}
+
+object RouteGuideMonixServer extends App {
+  val features = RouteGuidePersistence.parseFeatures(
+    Thread.currentThread.getContextClassLoader.getResource("route_guide.json")
+  )
+  val server = new RouteGuideServer(
+    ServerBuilder
+      .forPort(8980)
+      .addService(
+        RouteGuideGrpcMonix.bindService(
+          new RouteGuideMonixService(features),
+          monix.execution.Scheduler.global
+        )
+      )
+      .build()
+  )
   server.start()
   server.blockUntilShutdown()
 }
