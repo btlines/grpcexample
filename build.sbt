@@ -22,7 +22,7 @@ libraryDependencies ++= Seq(
   // for GRPC Gateway
   "beyondthelines"         %% "grpcgatewayruntime"   % "0.0.1" % "compile,protobuf",
   // for GRPC Monix
-  "beyondthelines"         %% "grpcmonixruntime"     % "0.0.0"
+  "beyondthelines"         %% "grpcmonixruntime"     % "0.0.1"
 )
 
 
