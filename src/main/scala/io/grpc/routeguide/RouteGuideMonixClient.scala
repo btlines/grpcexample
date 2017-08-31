@@ -83,12 +83,12 @@ class RouteGuideMonixClient(host: String, port: Int) {
     * features} with a variable delay in between. Prints the statistics when they are sent from the
     * server.
     */
-  @throws[InterruptedException]
   def recordRoute(features: Seq[Feature], numPoints: Int): Task[Unit] = {
     logger.info("*** RecordRoute")
     stub.recordRoute(
       Observable
         .fromIterable(features.map(_.getLocation))
+        .take(numPoints)
         .delayOnNext(100.millis)
     ).map { summary =>
       logger.info(s"Finished trip with ${summary.pointCount} points. Passed ${summary.featureCount} features. " + s"Travelled ${summary.distance} meters. It took ${summary.elapsedTime} seconds.")
