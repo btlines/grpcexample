@@ -8,6 +8,7 @@ import io.grpc.{ManagedChannelBuilder, Status}
 import io.grpc.stub.StreamObserver
 import RouteGuideService._
 
+import scala.io.StdIn
 import scala.util.{Random, Try}
 
 class RouteGuideClient(host: String, port: Int) {
@@ -177,16 +178,26 @@ object RouteGuideClient extends App {
   }
 
   val client = new RouteGuideClient("localhost", 8980)
-  try { // Looking for a valid feature
-    client.getFeature(409146138, -746188906)
-    // Feature missing.
-    client.getFeature(0, 0)
-    // Looking for features between 40, -75 and 42, -73.
-    client.listFeatures(400000000, -750000000, 420000000, -730000000)
-    // Record a few randomly selected points from the features file.
-    client.recordRoute(features, 10)
-    // Send and receive some notes.
-    val finishLatch = client.routeChat
-    if (!finishLatch.await(1, TimeUnit.MINUTES)) logger.warning("routeChat can not finish within 1 minutes")
+  var stop = false
+
+  try {
+    while (!stop) {
+      println("Choose one of the following:")
+      println(" 1 - getFeature (unary call)")
+      println(" 2 - listFeatures (server streaming)")
+      println(" 3 - recordRoute (client streaming)")
+      println(" 4 - routeChat (bidi streaming)")
+      println(" q - Quit")
+      StdIn.readChar() match {
+        case 'q' => stop = true
+        case '1' => client.getFeature(409146138, -746188906)
+        case '2' => client.listFeatures(400000000, -750000000, 420000000, -730000000)
+        case '3' => client.recordRoute(features, 10)
+        case '4' =>
+          val finishLatch = client.routeChat
+          if (!finishLatch.await(1, TimeUnit.MINUTES)) logger.warning("routeChat can not finish within 1 minutes")
+        case _ => ()
+      }
+    }
   } finally client.shutdown()
 }

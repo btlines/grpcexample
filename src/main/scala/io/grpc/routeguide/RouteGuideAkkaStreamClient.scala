@@ -11,6 +11,7 @@ import io.grpc.{ManagedChannelBuilder, Status}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.io.StdIn
 import scala.util.control.NonFatal
 import scala.util.Try
 
@@ -75,6 +76,10 @@ class RouteGuideAkkaStreamClient(host: String, port: Int) {
     logger.info("*** RecordRoute")
     Source(features.take(numPoints).to[collection.immutable.Iterable].map(_.getLocation))
       .throttle(1, 500.millis, 1, ThrottleMode.shaping)
+      .map { point =>
+        logger.info(s"Sending point $point")
+        point
+      }
       .via(stub.recordRoute)
       .map { summary =>
         List(
@@ -99,7 +104,11 @@ class RouteGuideAkkaStreamClient(host: String, port: Int) {
       RouteNote(message = "Fourth message", location = Some(Point(1, 1)))
     )
     Source(requests.to[collection.immutable.Iterable])
-      .throttle(1, 100.millis, 1, ThrottleMode.shaping)
+      .throttle(1, 500.millis, 1, ThrottleMode.shaping)
+      .map { note =>
+        logger.info(s"=> Send message '${note.message}' at (${note.getLocation.latitude}, ${note.getLocation.longitude})")
+        note
+      }
       .via(stub.routeChat)
       .map { note =>
         s"=> Got message '${note.message}' at (${note.getLocation.latitude}, ${note.getLocation.longitude})"
@@ -120,10 +129,29 @@ object RouteGuideAkkaStreamClient extends App {
 
   implicit val system = ActorSystem(classOf[RouteGuideAkkaStreamClient].getSimpleName)
   implicit val materializer = ActorMaterializer.create(system)
+
   val client = new RouteGuideAkkaStreamClient("localhost", 8980)
-  client.getFeature(409146138, -746188906).runForeach(println)
-  client.getFeature(0, 0).runForeach(println)
-  client.listFeatures(400000000, -750000000, 420000000, -730000000).runForeach(println)
-  client.recordRoute(features, 10).runForeach(println)
-  client.routeChat.runForeach(println)
+
+  var stop = false
+
+  while (!stop) {
+    println()
+    println("Choose one of the following:")
+    println(" 1 - getFeature (unary call)")
+    println(" 2 - listFeatures (server streaming)")
+    println(" 3 - recordRoute (client streaming)")
+    println(" 4 - routeChat (bidi streaming)")
+    println(" q - Quit")
+    StdIn.readChar() match {
+      case 'q' => stop = true
+      case '1' => Await.result(client.getFeature(409146138, -746188906).runForeach(logger.info), 1.minute)
+      case '2' => Await.result(client.listFeatures(400000000, -750000000, 420000000, -730000000).runForeach(logger.info), 1.minute)
+      case '3' => Await.result(client.recordRoute(features, 10).runForeach(logger.info), 1.minute)
+      case '4' => Await.result(client.routeChat.runForeach(logger.info), 1.minute)
+      case _ => ()
+    }
+  }
+  client.shutdown()
+  materializer.shutdown()
+  system.terminate()
 }
