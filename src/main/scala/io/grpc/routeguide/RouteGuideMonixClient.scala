@@ -5,10 +5,12 @@ import java.util.logging.Logger
 
 import io.grpc.{ManagedChannelBuilder, Status}
 import monix.eval.Task
+import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.io.StdIn
 import scala.util.control.NonFatal
 import scala.util.Try
 
@@ -90,6 +92,10 @@ class RouteGuideMonixClient(host: String, port: Int) {
         .fromIterable(features.map(_.getLocation))
         .take(numPoints)
         .delayOnNext(100.millis)
+        .map { point =>
+          logger.info(s"Sending $point")
+          point
+        }
     ).map { summary =>
       logger.info(s"Finished trip with ${summary.pointCount} points. Passed ${summary.featureCount} features. " + s"Travelled ${summary.distance} meters. It took ${summary.elapsedTime} seconds.")
     }.onErrorHandle {
@@ -142,20 +148,27 @@ object RouteGuideMonixClient extends App {
   }
 
   val client = new RouteGuideMonixClient("localhost", 8980)
-  val task = for { // Looking for a valid feature
-    _ <- client.getFeature(409146138, -746188906)
-    // Feature missing.
-    _ <- client.getFeature(0, 0)
-    // Looking for features between 40, -75 and 42, -73.
-    _ <- client.listFeatures(400000000, -750000000, 420000000, -730000000)
-    // Record a few randomly selected points from the features file.
-    _ <- client.recordRoute(features, 10)
-    // Send and receive some notes.
-    _ <- client.routeChat
-  } yield ()
 
-  Await.result(
-    task.runAsync(monix.execution.Scheduler.global),
-    1.minute
-  )
+  var stop = false
+
+  while (!stop) {
+    println()
+    println("Choose one of the following:")
+    println(" 1 - getFeature (unary call)")
+    println(" 2 - listFeatures (server streaming)")
+    println(" 3 - recordRoute (client streaming)")
+    println(" 4 - routeChat (bidi streaming)")
+    println(" q - Quit")
+    StdIn.readChar() match {
+      case 'q' => stop = true
+      case '1' => Await.result(client.getFeature(409146138, -746188906).runAsync, 1.minute)
+      case '2' => Await.result(client.listFeatures(400000000, -750000000, 420000000, -730000000).runAsync, 1.minute)
+      case '3' => Await.result(client.recordRoute(features, 10).runAsync, 1.minute)
+      case '4' => Await.result(client.routeChat.runAsync, 1.minute)
+      case _ => ()
+    }
+  }
+
+  client.shutdown()
+
 }
