@@ -4,8 +4,8 @@ resolvers += Resolver.bintrayRepo("beyondthelines", "maven")
 
 libraryDependencies ++= Seq(
   "com.trueaccord.scalapb" %% "compilerplugin"          % "0.6.7",
-  "beyondthelines"         %% "grpcgatewaygenerator"    % "0.0.5",
-  "beyondthelines"         %% "grpcmonixgenerator"      % "0.0.4",
-  "beyondthelines"         %% "grpcakkastreamgenerator" % "0.0.4"
+  "beyondthelines"         %% "grpcgatewaygenerator"    % "0.0.6",
+  "beyondthelines"         %% "grpcmonixgenerator"      % "0.0.5",
+  "beyondthelines"         %% "grpcakkastreamgenerator" % "0.0.5"
 )
 

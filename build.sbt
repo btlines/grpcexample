@@ -24,11 +24,12 @@ libraryDependencies ++= Seq(
   // for JSON conversion
   "com.trueaccord.scalapb" %% "scalapb-json4s"        % "0.3.0",
   // for GRPC Gateway
-  "beyondthelines"         %% "grpcgatewayruntime"    % "0.0.5" % "compile,protobuf",
+  "beyondthelines"         %% "grpcgatewayruntime"    % "0.0.6" % "compile,protobuf",
   // for GRPC Monix
-  "beyondthelines"         %% "grpcmonixruntime"      % "0.0.4",
+  "beyondthelines"         %% "grpcmonixruntime"      % "0.0.5",
   // for GRPC Akkastream
-  "beyondthelines"         %% "grpcakkastreamruntime" % "0.0.4"
+  "beyondthelines"         %% "grpcakkastreamruntime" % "0.0.5"
 )
 
+scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")
 
