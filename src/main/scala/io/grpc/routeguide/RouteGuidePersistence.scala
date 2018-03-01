@@ -3,7 +3,7 @@ package io.grpc.routeguide
 import java.net.URL
 import java.util.logging.Logger
 
-import com.trueaccord.scalapb.json.JsonFormat
+import scalapb.json4s.JsonFormat
 
 import scala.io.Source
 
